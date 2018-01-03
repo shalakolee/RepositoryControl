@@ -15,12 +15,26 @@ namespace GitBranchSwitcher.Models
         private bool _disposed;
         private bool _selected;
         private bool _canChangeBranches;
+        private bool _hasBranch = false;
 
         private Branch _selectedLocalBranch;
         private Branch _selectedRemoteBranch;
         private Branch _lastBranch;
 
 
+        public bool HasBranch
+        {
+            get
+            {
+                return _hasBranch;
+            }
+            set
+            {
+                if (_hasBranch == value) return;
+                _hasBranch = value;
+                OnPropertyChanged();
+            }
+        }
         private string _branchName;
         private string _path;
         private Repository _repo;
@@ -251,8 +265,6 @@ namespace GitBranchSwitcher.Models
             {
                 try
                 {
-
-
                     PullOptions options = new PullOptions();
                     options.FetchOptions = new FetchOptions();
                     options.FetchOptions.CredentialsProvider = new LibGit2Sharp.Handlers.CredentialsHandler(
@@ -347,6 +359,9 @@ namespace GitBranchSwitcher.Models
             SelectedRemoteBranch = null;
             _lastBranch = null;
             SelectedLocalBranch = Repo.Branches.First(x => x.IsCurrentRepositoryHead == true);
+
+          
+
 
         }
 
