@@ -7,7 +7,7 @@
         xmlns:viewmodels="clr-namespace:GitBranchSwitcher.ViewModels"        
         xmlns:models="clr-namespace:GitBranchSwitcher.Models"        
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
-
+        xmlns:converters="clr-namespace:GitBranchSwitcher.Converters"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         TextElement.FontWeight="Regular"
@@ -18,29 +18,49 @@
         FontFamily="{StaticResource MaterialDesignFont}"
         mc:Ignorable="d"
         Title="Switch my shit to a new branch!" Height="350" Width="525">
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis" TrueValue="Visible" FalseValue="Collapsed"/>
+    </Window.Resources>
     <Window.DataContext>
         <viewmodels:MainWindowViewModel />
     </Window.DataContext>
+    <DockPanel>
+        <Menu IsMainMenu="True" DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem x:Name="mnuSettings" Header="_Settings" Command="{Binding OpenSettingsCommand}">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="Settings" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem x:Name="mnuExit" Header="E_xit" Command="{Binding ExitCommand}">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="ExitToApp" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <!--<MenuItem x:Name="mnuAbout" Header="_About" Click="mnuAbout_Click" />-->
 
-    <Grid Margin="5">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource MaterialDesignDivider}" Panel.ZIndex="10" />
-        <Grid Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+        </Menu>
+        <Grid Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="auto"/>
-                <RowDefinition Height="auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Label Grid.Row="0">Select Projects to update</Label>
+            <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource MaterialDesignDivider}" Panel.ZIndex="10" />
+            <Grid Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Label Grid.Row="0">Select Projects to update</Label>
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -49,58 +69,87 @@
                     <ToggleButton VerticalAlignment="Center" IsChecked="{Binding Path=AllSelected, Mode=TwoWay}"  Style="{StaticResource MaterialDesignActionLightToggleButton}" />
                     <TextBlock FontWeight="Bold" Text="Select All" VerticalAlignment="Center" Grid.Column="1" Margin="8 0 0 0 " />
                 </Grid>
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
-            <ItemsControl x:Name="ProjectList" Margin="10" Grid.IsSharedSizeScope="True"  ItemsSource="{Binding Repositories}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type models:RepositoryInformation }">
-                        <Border x:Name="Border" Padding="8" BorderThickness="0 0 0 1" BorderBrush="{DynamicResource MaterialDesignDivider}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition SharedSizeGroup="Checkerz" />
-                                    <ColumnDefinition />
-                                </Grid.ColumnDefinitions>
-                                <ToggleButton VerticalAlignment="Center" IsChecked="{Binding Path=Selected, Mode=TwoWay}"  Style="{StaticResource MaterialDesignActionLightToggleButton}"  />
-                                    <StackPanel Orientation="Horizontal" Margin="8 0 0 0" Grid.Column="1">
-                                        <StackPanel Orientation="Vertical">
-                                            <TextBlock x:Name="DisplayName" FontWeight="Bold" Text="{Binding DisplayName}" />
-                                            <TextBlock  Text="{Binding BranchName}" />
-                                            <!--<TextBlock Text="{Binding CanChangeBranches}"/>-->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
+                    <ItemsControl x:Name="ProjectList" Margin="10" Grid.IsSharedSizeScope="True"  ItemsSource="{Binding Repositories}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:RepositoryInformation }">
+                                <Border x:Name="Border" Padding="8" BorderThickness="0 0 0 1" BorderBrush="{DynamicResource MaterialDesignDivider}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition SharedSizeGroup="Checkerz" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <ToggleButton VerticalAlignment="Center" IsChecked="{Binding Path=Selected, Mode=TwoWay}"  Style="{StaticResource MaterialDesignActionLightToggleButton}"  />
+                                        <StackPanel Orientation="Horizontal" Margin="8 0 0 0" Grid.Column="1">
+                                            <StackPanel Orientation="Vertical">
+                                                <TextBlock x:Name="DisplayName" FontWeight="Bold" Text="{Binding DisplayName}" />
+                                                <TextBlock  Text="{Binding BranchName}" />
+                                                <!--<TextBlock Text="{Binding CanChangeBranches}"/>-->
+                                            </StackPanel>
+                                            <Border Padding="8" BorderThickness="0 0 1 0" BorderBrush="{DynamicResource MaterialDesignDivider}"  />
+                                            <ComboBox Margin="8 0 0 0" ItemsSource="{Binding LocalBranches}" DisplayMemberPath="FriendlyName" 
+                                                SelectedItem="{Binding SelectedLocalBranch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                materialDesign:HintAssist.Hint="Search Local Branches"
+		                                        materialDesign:HintAssist.HintOpacity=".54"
+                                        		IsEditable="True"
+                                                Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                                                  >
+                                                <i:Interaction.Triggers>
+                                                    <i:EventTrigger EventName="SelectionChanged">
+                                                        <i:InvokeCommandAction Command="{Binding SelectedBranchChangedCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ComboBox}}" />
+                                                    </i:EventTrigger>
+                                                </i:Interaction.Triggers>
+                                            </ComboBox>
+                                            <Border Padding="8" BorderThickness="0 0 1 0" BorderBrush="{DynamicResource MaterialDesignDivider}"  />
+                                            <ComboBox Margin="8 0 0 0" ItemsSource="{Binding RemoteBranches}" DisplayMemberPath="FriendlyName" 
+                                                SelectedItem="{Binding SelectedRemoteBranch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                materialDesign:HintAssist.Hint="Search Remote Branches"
+		                                        materialDesign:HintAssist.HintOpacity=".54"
+                                        		IsEditable="True"
+                                                Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                                                  >
+                                                <i:Interaction.Triggers>
+                                                    <i:EventTrigger EventName="SelectionChanged">
+                                                        <i:InvokeCommandAction Command="{Binding SelectedBranchChangedCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ComboBox}}" />
+                                                    </i:EventTrigger>
+                                                </i:Interaction.Triggers>
+                                            </ComboBox>
+                                            <!--<Border Padding="8" BorderThickness="0 0 1 0" BorderBrush="{DynamicResource MaterialDesignDivider}"  />-->
+                                            
+
                                         </StackPanel>
-                                        <Border Padding="8" BorderThickness="0 0 1 0" BorderBrush="{DynamicResource MaterialDesignDivider}"  />
-                                        <ComboBox ItemsSource="{Binding LocalBranches}" DisplayMemberPath="FriendlyName" SelectedItem="{Binding SelectedBranch, Mode=TwoWay}" >
-                                        </ComboBox>
-                                    </StackPanel>
-                                </Grid>
-                        </Border>
-                            <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding CanChangeBranches}" Value="True">
-                                    <Setter TargetName="DisplayName" Property="Foreground" Value="{DynamicResource MaterialDesignBody}" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding CanChangeBranches}" Value="False">
-                                <Setter TargetName="DisplayName" Property="Foreground" Value="red" />
-                            </DataTrigger>
-                        </DataTemplate.Triggers>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding CanChangeBranches}" Value="True">
+                                        <Setter TargetName="DisplayName" Property="Foreground" Value="{DynamicResource MaterialDesignBody}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CanChangeBranches}" Value="False">
+                                        <Setter TargetName="DisplayName" Property="Foreground" Value="red" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+            <Grid Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                <StackPanel>
+                    <!--<TextBox Text="{Binding TargetBranch}">
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="KeyDown" >
+                                <i:InvokeCommandAction Command="{Binding ValidateBranchCommand}" CommandParameter="{Binding Text, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TextBox}}" />
+                            </i:EventTrigger>
+                        </i:Interaction.Triggers>
+                    </TextBox>
+                    <TextBlock x:Name="txtLog" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ScrollViewer.VerticalScrollBarVisibility="Auto" Margin="5"></TextBlock>-->
+                </StackPanel>
+            </Grid>
+            <Grid Grid.Column="2" Grid.Row="3" VerticalAlignment="Bottom">
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="btnGo" Content="Change Branches " Margin="5" Command="{Binding RefreshCommand}" />
+                </StackPanel>
+            </Grid>
         </Grid>
-        <Grid Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-            <StackPanel>
-                <TextBox Text="{Binding TargetBranch}">
-                    <i:Interaction.Triggers>
-                        <i:EventTrigger EventName="KeyDown" >
-                            <i:InvokeCommandAction Command="{Binding ValidateTargetBranch}" CommandParameter="{Binding TargetBranch}" />
-                        </i:EventTrigger>
-                    </i:Interaction.Triggers>
-                </TextBox>
-                <TextBlock x:Name="txtLog" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ScrollViewer.VerticalScrollBarVisibility="Auto" Margin="5"></TextBlock>
-            </StackPanel>
-        </Grid>
-        <Grid Grid.Column="2" Grid.Row="3" VerticalAlignment="Bottom">
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="btnGo" Content="Change Branches " Margin="5" Command="{Binding RefreshCommand}" />
-            </StackPanel>
-        </Grid>
-    </Grid>
+    </DockPanel>
 </Window>
