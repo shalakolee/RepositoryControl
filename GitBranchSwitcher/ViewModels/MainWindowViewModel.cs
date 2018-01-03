@@ -137,7 +137,7 @@ namespace GitBranchSwitcher.ViewModels
         {
             foreach (var repository in Repositories)
             {
-                repository.checkoutBranch("dev");
+                //repository.checkoutBranch("dev");
             }
         }
         private void ExecuteValidateBranchCommand(object param)

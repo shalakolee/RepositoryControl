@@ -67,8 +67,35 @@
                                             <!--<TextBlock Text="{Binding CanChangeBranches}"/>-->
                                         </StackPanel>
                                         <Border Padding="8" BorderThickness="0 0 1 0" BorderBrush="{DynamicResource MaterialDesignDivider}"  />
-                                        <ComboBox ItemsSource="{Binding LocalBranches}" DisplayMemberPath="FriendlyName" SelectedItem="{Binding SelectedBranch, Mode=TwoWay}" >
+                                        <ComboBox Margin="8 0 0 0" ItemsSource="{Binding LocalBranches}" DisplayMemberPath="FriendlyName" 
+                                                SelectedItem="{Binding SelectedLocalBranch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                materialDesign:HintAssist.Hint="Search Local Branches"
+		                                        materialDesign:HintAssist.HintOpacity=".54"
+                                        		IsEditable="True"
+                                                Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                                                  >
+                                            <i:Interaction.Triggers>
+                                                <i:EventTrigger EventName="SelectionChanged">
+                                                    <i:InvokeCommandAction Command="{Binding SelectedBranchChangedCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ComboBox}}" />
+                                                </i:EventTrigger>
+                                            </i:Interaction.Triggers>
                                         </ComboBox>
+                                        <Border Padding="8" BorderThickness="0 0 1 0" BorderBrush="{DynamicResource MaterialDesignDivider}"  />
+                                        <ComboBox Margin="8 0 0 0" ItemsSource="{Binding RemoteBranches}" DisplayMemberPath="FriendlyName" 
+                                                SelectedItem="{Binding SelectedRemoteBranch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                materialDesign:HintAssist.Hint="Search Remote Branches"
+		                                        materialDesign:HintAssist.HintOpacity=".54"
+                                        		IsEditable="True"
+                                                Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                                                  >
+                                            <i:Interaction.Triggers>
+                                                <i:EventTrigger EventName="SelectionChanged">
+                                                    <i:InvokeCommandAction Command="{Binding SelectedBranchChangedCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ComboBox}}" />
+                                                </i:EventTrigger>
+                                            </i:Interaction.Triggers>
+                                        </ComboBox>
+                                        <!--<Border Padding="8" BorderThickness="0 0 1 0" BorderBrush="{DynamicResource MaterialDesignDivider}"  />-->
+                                        
                                     </StackPanel>
                                 </Grid>
                         </Border>

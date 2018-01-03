@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using LibGit2Sharp;
 using System.Reflection;
 using System.IO;
+using GitBranchSwitcher.Commands;
 
 namespace GitBranchSwitcher.Models
 {
@@ -14,7 +15,12 @@ namespace GitBranchSwitcher.Models
         private bool _disposed;
         private bool _selected;
         private bool _canChangeBranches;
-        private Branch _selectedBranch;
+
+        private Branch _selectedLocalBranch;
+        private Branch _selectedRemoteBranch;
+        private Branch _lastBranch;
+
+
         private string _branchName;
         private string _path;
         private Repository _repo;
@@ -39,30 +45,44 @@ namespace GitBranchSwitcher.Models
                 return Repo.Branches.Where(x => x.IsRemote == false).ToList();
             }
         }
-        public Branch SelectedBranch
+        public List<Branch> RemoteBranches
         {
             get
             {
-                if (_selectedBranch == null)
-                    _selectedBranch = Repo.Branches.First(x => x.IsCurrentRepositoryHead == true);
-                return _selectedBranch;
+                return Repo.Branches.Where(x => x.IsRemote == true).ToList();
+            }
+        }
+
+        public Branch SelectedLocalBranch
+        {
+            get
+            {
+                if (_selectedLocalBranch == null)
+                    SelectedLocalBranch = Repo.Branches.First(x => x.IsCurrentRepositoryHead == true);
+                return _selectedLocalBranch;
             }
             set
             {
-                if (_selectedBranch == value) return;
-                try
-                {
-                    _selectedBranch = value;
-                    checkoutBranch(_selectedBranch.FriendlyName);
-                    OnPropertyChanged();
-
-                }
-                catch (Exception)
-                {
-
-                }
+                if (_selectedLocalBranch == value) return;
+                _lastBranch = _selectedLocalBranch;
+                _selectedLocalBranch = value;
+                OnPropertyChanged();
             }
         }
+        public Branch SelectedRemoteBranch
+        {
+            get
+            {
+                return _selectedRemoteBranch;
+            }
+            set
+            {
+                if (_selectedRemoteBranch == value) return;
+                _selectedRemoteBranch = value;
+                OnPropertyChanged();
+            }
+        }
+
         public Branch CurrentBranch
         {
             get
@@ -110,6 +130,7 @@ namespace GitBranchSwitcher.Models
             watcher.Filter = "*.*";
             watcher.Changed += new FileSystemEventHandler(OnChanged);
             watcher.EnableRaisingEvents = true;
+            watcher.IncludeSubdirectories = true;
             
         }
         private void OnChanged(object source, FileSystemEventArgs e)
@@ -216,6 +237,7 @@ namespace GitBranchSwitcher.Models
         {
             Repo = new Repository(_path);
 
+
             PropertyInfo[] properties = typeof(RepositoryInformation).GetProperties();
             foreach (PropertyInfo property in properties)
             {
@@ -223,20 +245,110 @@ namespace GitBranchSwitcher.Models
             }
         }
 
-        public bool checkoutBranch(string branchName)
+        public async Task<bool> checkoutBranch(string branchName)
         {
-            try
+            return await Task.Run<bool>(() =>
             {
-                LibGit2Sharp.Commands.Checkout(Repo, branchName);
-                var credentials = Repo.Config.BuildSignature(DateTimeOffset.Now);
+                try
+                {
 
-                return true;
-            }
-            catch (Exception ex)
+
+                    PullOptions options = new PullOptions();
+                    options.FetchOptions = new FetchOptions();
+                    options.FetchOptions.CredentialsProvider = new LibGit2Sharp.Handlers.CredentialsHandler(
+                        (url, usernameFromUrl, types) =>
+                            new UsernamePasswordCredentials()
+                            {
+                                Username = Properties.Settings.Default.Username,
+                                Password = Properties.Settings.Default.Password
+                            });
+                    var merger = Repo.Config.BuildSignature(DateTimeOffset.Now);
+
+                    //check to see if the branch is remote
+                    string localbranchName = branchName;
+                    if (branchName.Contains("origin/"))
+                    {
+                        localbranchName = branchName.Replace("origin/", "");
+                        Branch trackedBranch = Repo.Branches[branchName];
+                        //check if we have the same local branch
+                        if (Repo.Branches[localbranchName] != null)
+                        {
+                            //we already have the branch, lets checkout and pull
+                            LibGit2Sharp.Commands.Checkout(Repo, localbranchName);
+                            try
+                            {
+                                LibGit2Sharp.Commands.Pull(Repo, merger, options);
+                            }
+                            catch (Exception)
+                            {
+
+                            }
+
+                        }
+                        else
+                        {
+                            Branch branch = Repo.CreateBranch(localbranchName, trackedBranch.Tip);
+                            Repo.Branches.Update(branch, b => b.TrackedBranch = trackedBranch.CanonicalName);
+                            LibGit2Sharp.Commands.Checkout(Repo, localbranchName);
+                        }
+
+                    }
+                    else
+                    {
+                        LibGit2Sharp.Commands.Checkout(Repo, branchName);
+                        try
+                        {
+                            LibGit2Sharp.Commands.Pull(Repo, merger, options);
+
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+
+                    }
+
+                    
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    //if we could not check out the branch
+                    throw ex;
+                }
+            });
+
+        }
+
+        private RelayCommand _selectedBranchChangedCommand;
+        public RelayCommand SelectedBranchChangedCommand
+        {
+            get
             {
-                //if we could not check out the branch
-                return false;
+                if (_selectedBranchChangedCommand == null)
+                    _selectedBranchChangedCommand = new RelayCommand(e => ExecuteSelectedBranchChangedCommand(e));
+                return _selectedBranchChangedCommand;
             }
         }
+        private void ExecuteSelectedBranchChangedCommand(object param)
+        {
+            if (param == null) return;
+            Branch myBranch = (Branch)param;
+            if(_lastBranch == null)
+            {
+                if (myBranch.FriendlyName.Replace("origin/", "") == _selectedLocalBranch.FriendlyName.Replace("origin/", "")) return;
+            }
+            else
+            {
+                if (myBranch.FriendlyName.Replace("origin/", "") == _lastBranch.FriendlyName.Replace("origin/", "")) return;
+            }
+            bool branchupdated = Task.Run(() => checkoutBranch(myBranch.FriendlyName)).Result;
+
+            SelectedRemoteBranch = null;
+            _lastBranch = null;
+            SelectedLocalBranch = Repo.Branches.First(x => x.IsCurrentRepositoryHead == true);
+
+        }
+
     }
 }
